@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.relayshield/relayshield-mcp",
+  "name": "io.github.nzdsf2-gif/relayshield-mcp",
   "title": "RelayShield Security Intelligence",
   "description": "Breach detection, SIM swap, domain lookalikes, OAuth watchlist, URL scanning. Subscription or PAYG.",
   "version": "0.2.0",
