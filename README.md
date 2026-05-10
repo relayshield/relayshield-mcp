@@ -2,6 +2,8 @@
 
 <!-- mcp-name: io.github.nzdsf2-gif/relayshield-mcp -->
 
+`mcp-name: io.github.nzdsf2-gif/relayshield-mcp`
+
 [RelayShield](https://relayshield.net) security intelligence as an MCP server — plug breach detection, SIM swap detection, domain lookalike monitoring, OAuth supply chain watchlist, and URL/file scanning directly into Claude and any MCP-compatible AI agent.
 
 ## Tools
