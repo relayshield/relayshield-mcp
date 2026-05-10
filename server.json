@@ -1,0 +1,40 @@
+{
+  "name": "io.github.relayshield/relayshield-mcp",
+  "title": "RelayShield Security Intelligence",
+  "description": "Security intelligence MCP server — breach detection, SIM swap detection, domain lookalike monitoring, OAuth supply chain watchlist, and URL/file malware scanning. Subscription (RapidAPI) and pay-as-you-go (x402 USDC on Base) access modes.",
+  "version": "0.2.0",
+  "websiteUrl": "https://relayshield.net",
+  "repository": {
+    "url": "https://github.com/relayshield/relayshield-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "relayshield-mcp",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "RELAYSHIELD_API_URL",
+          "description": "API Gateway base URL — https://xhh3tfrhng.execute-api.us-east-1.amazonaws.com/prod",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "RELAYSHIELD_API_KEY",
+          "description": "RapidAPI subscription key (subscription mode — all 7 tools available)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "RELAYSHIELD_X_PAYMENT",
+          "description": "x402 payment proof — USDC on Base (pay-as-you-go mode — 4 tools, no API key needed)",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
