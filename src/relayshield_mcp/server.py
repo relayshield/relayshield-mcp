@@ -23,7 +23,8 @@ x402 PAYG pricing (USDC on Base):
   check_oauth_watchlist   $0.15
   check_scan_result       $0.00  (free — poll a paid scan result)
   scan_wallet             $0.10
-  scan_url / scan_file    coming soon (VT commercial licensing pending)
+  scan_url                $0.05
+  scan_file               $0.10
 """
 
 import asyncio
@@ -50,11 +51,9 @@ PAYG_PRICING: dict[str, str] = {
     "check_oauth_watchlist":   "$0.15 USDC",
     "check_scan_result":       "$0.00 USDC (free — poll result of a paid scan)",
     "scan_wallet":             "$0.10 USDC",
-    "scan_url":                "coming soon",
-    "scan_file":               "coming soon",
+    "scan_url":                "$0.05 USDC",
+    "scan_file":               "$0.10 USDC",
 }
-
-VT_COMING_SOON = {"scan_url", "scan_file"}
 
 # ---------------------------------------------------------------------------
 # Server
@@ -167,7 +166,7 @@ async def list_tools() -> list[types.Tool]:
                 "Call check_scan_result with the analysis_id every 5 seconds until verdict is returned. "
                 "Verdicts: malicious | suspicious | clean | timeout. "
                 "Use before navigating to an unfamiliar URL or when a user forwards a suspicious link. "
-                "Requires subscription API key — coming soon for pay-as-you-go. "
+                "Pay-as-you-go: $0.05 USDC per scan (x402 on Base). "
                 "Subscription: rapidapi.com/relayshield"
             ),
             inputSchema={
@@ -191,7 +190,7 @@ async def list_tools() -> list[types.Tool]:
                 "Call check_scan_result with the analysis_id every 5 seconds until verdict is returned. "
                 "Verdicts: malicious | suspicious | clean | timeout. "
                 "Use when a user receives an email attachment and forwards the download link. "
-                "Requires subscription API key — coming soon for pay-as-you-go. "
+                "Pay-as-you-go: $0.10 USDC per scan (x402 on Base). "
                 "Subscription: rapidapi.com/relayshield"
             ),
             inputSchema={
@@ -269,19 +268,6 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             "RELAYSHIELD_API_URL environment variable must be set. "
             "See README for configuration instructions."
         )
-
-    # VT-licensed tools require a subscription key — return coming soon for PAYG callers
-    if not API_KEY and name in VT_COMING_SOON:
-        return [types.TextContent(type="text", text=json.dumps({
-            "ok": False,
-            "tool": name,
-            "status": "coming_soon",
-            "message": (
-                f"{name} requires a subscription API key. "
-                "VT commercial licensing is pending for pay-as-you-go access. "
-                "Subscribe at rapidapi.com/relayshield for early access."
-            ),
-        }))]
 
     # Build request headers — subscription key takes priority over x402 payment proof
     headers = {"Content-Type": "application/json"}

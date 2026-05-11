@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "relayshield-mcp"
-version = "0.2.2"
+version = "0.2.3"
 description = "MCP server for RelayShield — breach detection, SIM swap, domain lookalikes, OAuth watchlist, and URL/file scanning. Subscription (RapidAPI) and pay-as-you-go (x402 USDC on Base) access modes."
 readme = "README.md"
 license = { text = "MIT" }
