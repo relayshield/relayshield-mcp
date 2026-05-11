@@ -22,6 +22,7 @@ x402 PAYG pricing (USDC on Base):
   check_domain_lookalikes $0.50
   check_oauth_watchlist   $0.15
   check_scan_result       $0.00  (free — poll a paid scan result)
+  scan_wallet             $0.10
   scan_url / scan_file    coming soon (VT commercial licensing pending)
 """
 
@@ -48,6 +49,7 @@ PAYG_PRICING: dict[str, str] = {
     "check_domain_lookalikes": "$0.50 USDC",
     "check_oauth_watchlist":   "$0.15 USDC",
     "check_scan_result":       "$0.00 USDC (free — poll result of a paid scan)",
+    "scan_wallet":             "$0.10 USDC",
     "scan_url":                "coming soon",
     "scan_file":               "coming soon",
 }
@@ -209,6 +211,35 @@ async def list_tools() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="scan_wallet",
+            description=(
+                "Check an EVM wallet address for on-chain risk signals using GoPlus Security. "
+                "Detects blacklisted addresses, contract risk flags, malicious activity, "
+                "phishing associations, and other on-chain threat indicators. "
+                "Returns risk_level (LOW/MEDIUM/HIGH), risk_flags list, and raw GoPlus data. "
+                "Supports Ethereum mainnet (default) and other EVM chains via chain_id. "
+                "Use before sending funds to an unknown address or in DeFi due-diligence flows. "
+                "Pay-as-you-go: $0.10 USDC per scan (x402 on Base). "
+                "Subscription: rapidapi.com/relayshield"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["address"],
+                "properties": {
+                    "address": {
+                        "type": "string",
+                        "description": "EVM wallet address to scan (0x + 40 hex chars)",
+                        "pattern": "^0x[0-9a-fA-F]{40}$",
+                    },
+                    "chain_id": {
+                        "type": "string",
+                        "description": "EVM chain ID (default: 1 for Ethereum mainnet). Use 8453 for Base, 137 for Polygon.",
+                        "default": "1",
+                    },
+                },
+            },
+        ),
+        types.Tool(
             name="check_scan_result",
             description=(
                 "Poll for the result of a previously submitted URL or file scan. "
@@ -319,6 +350,16 @@ async def _dispatch(
             f"{base}/oauth-watchlist",
             headers=headers,
             json={"email": arguments["email"]},
+        )
+
+    if name == "scan_wallet":
+        body = {"address": arguments["address"]}
+        if "chain_id" in arguments:
+            body["chain_id"] = arguments["chain_id"]
+        return await client.post(
+            f"{base}/scan-wallet",
+            headers=headers,
+            json=body,
         )
 
     if name == "scan_url":
