@@ -7,7 +7,7 @@ and other MCP-compatible AI agents.
 
 Configuration (environment variables):
   RELAYSHIELD_API_URL   — API Gateway invoke URL (required)
-                          https://xhh3tfrhng.execute-api.us-east-1.amazonaws.com/prod
+                          https://atq6wtkp6k.execute-api.us-east-1.amazonaws.com/prod
   RELAYSHIELD_API_KEY   — x-api-key for subscription access (RapidAPI / API Gateway)
   RELAYSHIELD_X_PAYMENT — x402 payment proof for pay-as-you-go access (USDC on Base)
 
@@ -26,6 +26,8 @@ x402 PAYG pricing (USDC on Base):
   scan_wallet             $0.10
   scan_url                $0.05
   scan_file               $0.10
+  check_mcp_registry_risk       $0.35
+  check_prompt_injection_breach $0.35
 """
 
 import asyncio
@@ -55,6 +57,8 @@ PAYG_PRICING: dict[str, str] = {
     "scan_wallet":             "$0.10 USDC",
     "scan_url":                "$0.05 USDC",
     "scan_file":               "$0.10 USDC",
+    "check_mcp_registry_risk":       "$0.35 USDC",
+    "check_prompt_injection_breach": "$0.35 USDC",
 }
 
 # ---------------------------------------------------------------------------
@@ -266,6 +270,56 @@ async def list_tools() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="check_mcp_registry_risk",
+            description=(
+                "Check an MCP server URL or package name for red flags: known-malicious IOC match, "
+                "typosquat/near-miss against well-known MCP ecosystem domains, and domain registration "
+                "age. Part of RelayShield's Agentic Attack Surface bundle — early coverage for an "
+                "ecosystem with minimal dedicated security tooling as of 2026. "
+                "Use before an agent connects to or installs a new, unfamiliar MCP server. "
+                "Absence of findings means 'unknown,' not 'verified safe.' "
+                "Pay-as-you-go: $0.35 USDC per check (x402 on Base). "
+                "Subscription: rapidapi.com/relayshield"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "server_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "MCP server URL to check (e.g. https://example-mcp-server.com)",
+                    },
+                    "package_name": {
+                        "type": "string",
+                        "description": "Package name to check if no server_url is available (limited coverage — no dedicated MCP package registry yet)",
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="check_prompt_injection_breach",
+            description=(
+                "Check whether an email address has exposure in a criminal dump whose own "
+                "announcement text suggests an AI agent — rather than a traditional phishing or "
+                "malware campaign — was involved in obtaining it. Heuristic v1 classifier over "
+                "Telegram dump-announcement text, not a confirmed-attribution guarantee. "
+                "Use as an early signal that an AI agent workflow may have been the breach vector. "
+                "Pay-as-you-go: $0.35 USDC per check (x402 on Base). "
+                "Subscription: rapidapi.com/relayshield"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Email address to check",
+                    }
+                },
+            },
+        ),
+        types.Tool(
             name="check_scan_result",
             description=(
                 "Poll for the result of a previously submitted URL or file scan. "
@@ -404,6 +458,30 @@ async def _dispatch(
         return await client.get(
             f"{result_base}/result/{arguments['analysis_id']}",
             headers=headers,
+        )
+
+    # AGENTIC-3/4 (added 2026-07-07) — served from the isolated
+    # relayshield-agentic-api Lambda, but reachable through the same
+    # API_BASE gateway since its routes are registered there too.
+    # PAYG-only for now: no flat-subscription (x-api-key) route exists yet
+    # for these two endpoints, only Stripe-metered and x402 PAYG.
+    if name == "check_mcp_registry_risk":
+        body: dict = {}
+        if "server_url" in arguments:
+            body["server_url"] = arguments["server_url"]
+        if "package_name" in arguments:
+            body["package_name"] = arguments["package_name"]
+        return await client.post(
+            f"{API_BASE}/v1/payg/mcp-registry-risk",
+            headers=headers,
+            json=body,
+        )
+
+    if name == "check_prompt_injection_breach":
+        return await client.post(
+            f"{API_BASE}/v1/payg/prompt-injection-breach",
+            headers=headers,
+            json={"email": arguments["email"]},
         )
 
     raise ValueError(f"Unknown tool: {name}")
