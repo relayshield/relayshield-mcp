@@ -20,7 +20,7 @@ x402 PAYG pricing (USDC on Base):
   check_breach            $0.10
   check_sim_swap          $0.25
   check_domain_lookalikes $0.50
-  check_oauth_watchlist   $0.15
+  check_oauth_watchlist   $0.30
   check_infostealer       $0.15
   check_scan_result       $0.00  (free — poll a paid scan result)
   scan_wallet             $0.10
@@ -28,6 +28,10 @@ x402 PAYG pricing (USDC on Base):
   scan_file               $0.10
   check_mcp_registry_risk       $0.35
   check_prompt_injection_breach $0.35
+  check_supply_chain      $0.10
+  check_session_risk      $0.30
+  check_nhi_exposure      $0.40
+  check_secret_scan       $0.35
 """
 
 import asyncio
@@ -51,7 +55,7 @@ PAYG_PRICING: dict[str, str] = {
     "check_breach":            "$0.10 USDC",
     "check_sim_swap":          "$0.25 USDC",
     "check_domain_lookalikes": "$0.50 USDC",
-    "check_oauth_watchlist":   "$0.15 USDC",
+    "check_oauth_watchlist":   "$0.30 USDC",
     "check_infostealer":       "$0.15 USDC",
     "check_scan_result":       "$0.00 USDC (free — poll result of a paid scan)",
     "scan_wallet":             "$0.10 USDC",
@@ -59,6 +63,10 @@ PAYG_PRICING: dict[str, str] = {
     "scan_file":               "$0.10 USDC",
     "check_mcp_registry_risk":       "$0.35 USDC",
     "check_prompt_injection_breach": "$0.35 USDC",
+    "check_supply_chain":     "$0.10 USDC",
+    "check_session_risk":     "$0.30 USDC",
+    "check_nhi_exposure":     "$0.40 USDC",
+    "check_secret_scan":      "$0.35 USDC",
 }
 
 # ---------------------------------------------------------------------------
@@ -320,6 +328,106 @@ async def list_tools() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="check_supply_chain",
+            description=(
+                "Check up to 10 vendor domains (or vendor emails, domain extracted automatically) "
+                "for breach and infostealer exposure. Returns a per-vendor risk level plus an "
+                "aggregate dark-web exposure score. Use to vet a third-party vendor, MCP server "
+                "operator, or supply-chain dependency before an agent integrates with or grants "
+                "access to it. "
+                "Pay-as-you-go: $0.10 USDC per check (x402 on Base). "
+                "Subscription: rapidapi.com/relayshield"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "vendor_domains": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Up to 10 vendor domains to check, e.g. ['vendor.example.com']. Provide this or vendor_emails.",
+                    },
+                    "vendor_emails": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Alternative: vendor email addresses — the domain portion is extracted automatically.",
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="check_session_risk",
+            description=(
+                "Check an email address for active or reusable stolen session material (cookies, "
+                "tokens) found in criminal stealer logs — exposure that can bypass MFA entirely, not "
+                "just a password. Use to assess whether an identity currently has hijackable sessions "
+                "in circulation. "
+                "Pay-as-you-go: $0.30 USDC per check (x402 on Base). "
+                "Subscription: rapidapi.com/relayshield"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Email address to check for active session/AiTM exposure",
+                    }
+                },
+            },
+        ),
+        types.Tool(
+            name="check_nhi_exposure",
+            description=(
+                "Check a domain, or up to 10 vendor domains, for exposed non-human-identity (NHI) "
+                "credentials — API keys, service-account tokens, personal access tokens, and other "
+                "machine identities found in criminal stealer logs. Use to assess exposure of the "
+                "machine credentials an agent or its supply chain actually runs on, not just human "
+                "logins. "
+                "Pay-as-you-go: $0.40 USDC per check (x402 on Base). "
+                "Subscription: rapidapi.com/relayshield"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "Your own domain to check. Provide this or vendor_domains (or both).",
+                    },
+                    "vendor_domains": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Up to 10 vendor/supply-chain domains to check.",
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="check_secret_scan",
+            description=(
+                "Check a domain, or up to 5 vendor domains, for secrets and credentials exposed in "
+                "public GitHub/GitLab repositories. Use to assess whether an agent's own domain, or "
+                "a vendor/supply-chain dependency's domain, has leaked credentials sitting in indexed "
+                "public source code. "
+                "Pay-as-you-go: $0.35 USDC per check (x402 on Base). "
+                "Subscription: rapidapi.com/relayshield"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "Your own domain to check. Provide this or vendor_domains (or both).",
+                    },
+                    "vendor_domains": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Up to 5 vendor domains to check.",
+                    },
+                },
+            },
+        ),
+        types.Tool(
             name="check_scan_result",
             description=(
                 "Poll for the result of a previously submitted URL or file scan. "
@@ -343,7 +451,7 @@ async def list_tools() -> list[types.Tool]:
 
 
 @app.call_tool()
-async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
+async def call_tool(name: str, arguments: dict) -> list[types.TextContent] | types.CallToolResult:
     if not API_BASE:
         return _error(
             "RELAYSHIELD_API_URL environment variable must be set. "
@@ -370,8 +478,39 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
     if r.status_code == 402:
         return _payment_required(name, r)
 
+    # Non-2xx upstream responses (401/429/500/etc.) previously fell through here
+    # as a bare list[TextContent], which the SDK wraps as isError=False — a client
+    # checking only isError would read "upstream failed" as a clean result. Surface
+    # these as an explicit CallToolResult with isError=True instead, same as the
+    # SDK's own automatic handling of validation errors and unknown tool names.
+    if not (200 <= r.status_code < 300):
+        return types.CallToolResult(
+            content=[types.TextContent(
+                type="text",
+                text=json.dumps({"ok": False, "status_code": r.status_code, "body": r.text[:2000]}),
+            )],
+            isError=True,
+        )
+
+    # Defensive check even at a 2xx status: RelayShield's own API never sends
+    # ok:false with a 2xx code today (_err() always uses a non-2xx status), but a
+    # network intermediary or a future regression could still produce a malformed
+    # or ok:false body here — treat that as a failed check, not a clean result.
+    try:
+        parsed_body = json.loads(r.text)
+    except (json.JSONDecodeError, TypeError):
+        return types.CallToolResult(
+            content=[types.TextContent(
+                type="text",
+                text=json.dumps({"ok": False, "status_code": r.status_code, "raw_body": r.text[:2000]}),
+            )],
+            isError=True,
+        )
+    if isinstance(parsed_body, dict) and parsed_body.get("ok") is False:
+        return types.CallToolResult(content=[types.TextContent(type="text", text=r.text)], isError=True)
+
     # Append conversion advisory on successful PAYG calls
-    if not API_KEY and r.status_code == 200:
+    if not API_KEY:
         return _payg_success(r.text, name)
 
     return [types.TextContent(type="text", text=r.text)]
@@ -460,6 +599,49 @@ async def _dispatch(
             headers=headers,
         )
 
+    if name == "check_supply_chain":
+        body: dict = {}
+        if "vendor_domains" in arguments:
+            body["vendor_domains"] = arguments["vendor_domains"]
+        if "vendor_emails" in arguments:
+            body["vendor_emails"] = arguments["vendor_emails"]
+        return await client.post(
+            f"{base}/supply-chain",
+            headers=headers,
+            json=body,
+        )
+
+    if name == "check_session_risk":
+        return await client.post(
+            f"{base}/session-risk",
+            headers=headers,
+            json={"email": arguments["email"]},
+        )
+
+    if name == "check_nhi_exposure":
+        body = {}
+        if "domain" in arguments:
+            body["domain"] = arguments["domain"]
+        if "vendor_domains" in arguments:
+            body["vendor_domains"] = arguments["vendor_domains"]
+        return await client.post(
+            f"{base}/nhi-exposure",
+            headers=headers,
+            json=body,
+        )
+
+    if name == "check_secret_scan":
+        body = {}
+        if "domain" in arguments:
+            body["domain"] = arguments["domain"]
+        if "vendor_domains" in arguments:
+            body["vendor_domains"] = arguments["vendor_domains"]
+        return await client.post(
+            f"{base}/secret-scan",
+            headers=headers,
+            json=body,
+        )
+
     # AGENTIC-3/4 (added 2026-07-07) — served from the isolated
     # relayshield-agentic-api Lambda, but reachable through the same
     # API_BASE gateway since its routes are registered there too.
@@ -520,8 +702,11 @@ def _payg_success(response_text: str, tool_name: str) -> list[types.TextContent]
     return [types.TextContent(type="text", text=json.dumps(data))]
 
 
-def _error(message: str) -> list[types.TextContent]:
-    return [types.TextContent(type="text", text=json.dumps({"ok": False, "error": message}))]
+def _error(message: str) -> types.CallToolResult:
+    return types.CallToolResult(
+        content=[types.TextContent(type="text", text=json.dumps({"ok": False, "error": message}))],
+        isError=True,
+    )
 
 
 # ---------------------------------------------------------------------------

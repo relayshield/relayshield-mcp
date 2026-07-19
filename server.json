@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.nzdsf2-gif/relayshield-mcp",
   "title": "RelayShield Security Intelligence",
-  "description": "Breach detection, SIM swap, IOC lookups, infostealer & domain lookalikes, MCP registry risk, prompt-injection breach detection. 2.2M+ indicators.",
-  "version": "0.2.6",
+  "description": "Breach, SIM swap, infostealer, domain lookalikes, MCP registry risk, prompt-injection detection.",
+  "version": "0.2.7",
   "websiteUrl": "https://relayshield.net",
   "repository": {
     "url": "https://github.com/relayshield/relayshield-mcp",
@@ -13,7 +13,7 @@
     {
       "registryType": "pypi",
       "identifier": "relayshield-mcp",
-      "version": "0.2.6",
+      "version": "0.2.7",
       "transport": {
         "type": "stdio"
       },
@@ -26,7 +26,7 @@
         },
         {
           "name": "RELAYSHIELD_API_KEY",
-          "description": "RelayShield API key for subscription access (all tools available) — get one at relayshield.net/developers",
+          "description": "RelayShield API key for subscription access (all tools available) — get one at api.relayshield.net/developers",
           "isRequired": false,
           "isSecret": true
         },
