@@ -33,7 +33,7 @@ current authority, not just a login.
 
 ## Access modes
 
-**Subscription** — API key from [RapidAPI](https://rapidapi.com/relayshield/relayshield-security-intelligence). All 15 tools available. Free tier: 100 calls/month. Paid tiers from $29/month.
+**Subscription** — API key from [api.relayshield.net/developers](https://api.relayshield.net/developers). All 15 tools available. Free tier: 100 calls/month. Paid tiers from $29/month.
 
 **Pay-as-you-go** — No API key needed. Pay per check in USDC on Base (x402 protocol). Set `RELAYSHIELD_X_PAYMENT` with your payment proof. All 15 tools available ($0.05–$0.50/check, `check_scan_result` free). Call a tool with no payment set to receive pricing and payment instructions.
 
@@ -55,7 +55,7 @@ uvx relayshield-mcp
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
-**Subscription (RapidAPI key):**
+**Subscription (RelayShield API key):**
 ```json
 {
   "mcpServers": {
@@ -63,7 +63,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
       "command": "relayshield-mcp",
       "env": {
         "RELAYSHIELD_API_URL": "https://atq6wtkp6k.execute-api.us-east-1.amazonaws.com/prod",
-        "RELAYSHIELD_API_KEY": "your-rapidapi-key-here"
+        "RELAYSHIELD_API_KEY": "your-relayshield-api-key-here"
       }
     }
   }
@@ -93,7 +93,7 @@ Quit and relaunch Claude Desktop after editing.
 claude mcp add relayshield \
   --command relayshield-mcp \
   --env RELAYSHIELD_API_URL=https://atq6wtkp6k.execute-api.us-east-1.amazonaws.com/prod \
-  --env RELAYSHIELD_API_KEY=your-rapidapi-key-here
+  --env RELAYSHIELD_API_KEY=your-relayshield-api-key-here
 ```
 
 ## Usage examples
@@ -127,7 +127,7 @@ For URL and file scans, Claude automatically polls `check_scan_result` every 5 s
 | Variable | Description |
 |---|---|
 | `RELAYSHIELD_API_URL` | API Gateway base URL (required) |
-| `RELAYSHIELD_API_KEY` | RapidAPI subscription key (subscription mode) |
+| `RELAYSHIELD_API_KEY` | RelayShield subscription key (subscription mode) — get one at [api.relayshield.net/developers](https://api.relayshield.net/developers) |
 | `RELAYSHIELD_X_PAYMENT` | x402 payment proof — USDC on Base (pay-as-you-go mode) |
 
 Set `RELAYSHIELD_API_KEY` **or** `RELAYSHIELD_X_PAYMENT` — not both. API key takes priority if both are set.
@@ -135,5 +135,5 @@ Set `RELAYSHIELD_API_KEY` **or** `RELAYSHIELD_X_PAYMENT` — not both. API key t
 ## Links
 
 - [Landing page](https://relayshield.net)
-- [RapidAPI listing](https://rapidapi.com/relayshield/relayshield-security-intelligence)
+- [Get an API key](https://api.relayshield.net/developers)
 - [GitHub](https://github.com/relayshield/relayshield-mcp)
