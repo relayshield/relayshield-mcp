@@ -406,7 +406,7 @@ async def list_tools() -> list[types.Tool]:
             name="check_secret_scan",
             description=(
                 "Check a domain, or up to 5 vendor domains, for secrets and credentials exposed in "
-                "public GitHub/GitLab repositories. Use to assess whether an agent's own domain, or "
+                "public GitHub repositories. Use to assess whether an agent's own domain, or "
                 "a vendor/supply-chain dependency's domain, has leaked credentials sitting in indexed "
                 "public source code. "
                 "Pay-as-you-go: $0.35 USDC per check (x402 on Base). "

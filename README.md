@@ -24,7 +24,7 @@
 | `check_supply_chain` | Up to 10 vendor domains checked for breach/infostealer exposure | $0.10 USDC |
 | `check_session_risk` | Active/reusable stolen session (cookie/token) exposure check | $0.30 USDC |
 | `check_nhi_exposure` | Non-human-identity credential exposure — API keys, service tokens, PATs | $0.40 USDC |
-| `check_secret_scan` | Secrets exposed in public GitHub/GitLab repositories | $0.35 USDC |
+| `check_secret_scan` | Secrets exposed in public GitHub repositories | $0.35 USDC |
 
 `check_oauth_watchlist`, `check_supply_chain`, `check_session_risk`, `check_nhi_exposure`, and
 `check_secret_scan` cover related ground — connected-app, session, and machine-credential exposure
