@@ -62,7 +62,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
     "relayshield": {
       "command": "relayshield-mcp",
       "env": {
-        "RELAYSHIELD_API_URL": "https://atq6wtkp6k.execute-api.us-east-1.amazonaws.com/prod",
+        "RELAYSHIELD_API_URL": "https://api.relayshield.net",
         "RELAYSHIELD_API_KEY": "your-relayshield-api-key-here"
       }
     }
@@ -77,7 +77,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
     "relayshield": {
       "command": "relayshield-mcp",
       "env": {
-        "RELAYSHIELD_API_URL": "https://atq6wtkp6k.execute-api.us-east-1.amazonaws.com/prod",
+        "RELAYSHIELD_API_URL": "https://api.relayshield.net",
         "RELAYSHIELD_X_PAYMENT": "your-x402-payment-proof-here"
       }
     }
@@ -92,7 +92,7 @@ Quit and relaunch Claude Desktop after editing.
 ```bash
 claude mcp add relayshield \
   --command relayshield-mcp \
-  --env RELAYSHIELD_API_URL=https://atq6wtkp6k.execute-api.us-east-1.amazonaws.com/prod \
+  --env RELAYSHIELD_API_URL=https://api.relayshield.net \
   --env RELAYSHIELD_API_KEY=your-relayshield-api-key-here
 ```
 

@@ -20,7 +20,7 @@
       "environmentVariables": [
         {
           "name": "RELAYSHIELD_API_URL",
-          "description": "RelayShield API base URL — https://atq6wtkp6k.execute-api.us-east-1.amazonaws.com/prod",
+          "description": "RelayShield API base URL — https://api.relayshield.net",
           "isRequired": true,
           "isSecret": false
         },
