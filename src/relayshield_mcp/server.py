@@ -32,6 +32,7 @@ x402 PAYG pricing (USDC on Base):
   check_session_risk      $0.30
   check_nhi_exposure      $0.40
   check_secret_scan       $0.35
+  check_llm_credential_exposure $0.40
 """
 
 import asyncio
@@ -67,6 +68,7 @@ PAYG_PRICING: dict[str, str] = {
     "check_session_risk":     "$0.30 USDC",
     "check_nhi_exposure":     "$0.40 USDC",
     "check_secret_scan":      "$0.35 USDC",
+    "check_llm_credential_exposure": "$0.40 USDC",
 }
 
 # ---------------------------------------------------------------------------
@@ -428,6 +430,34 @@ async def list_tools() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="check_llm_credential_exposure",
+            description=(
+                "Check a domain, or up to 10 vendor domains, for exposed LLM/AI provider API keys "
+                "in criminal stealer log archives (LLMjacking) — closed-source platforms including "
+                "OpenAI, Anthropic Claude, Google Gemini, xAI Grok and Amazon Bedrock, alongside "
+                "DeepSeek, Moonshot Kimi, Alibaba Qwen, NVIDIA NIM and Hugging Face. A leaked LLM "
+                "provider key is a live, uncapped billing liability — real incidents have run from "
+                "tens of thousands of dollars per day to a $500K single-month bill from one "
+                "unthrottled key. Use to check your own domain or a vendor/supply-chain dependency. "
+                "Pay-as-you-go: $0.40 USDC per check (x402 on Base). "
+                "Subscription: rapidapi.com/relayshield"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "Your own domain to check. Provide this or vendor_domains (or both).",
+                    },
+                    "vendor_domains": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Up to 10 vendor/supply-chain domains to check.",
+                    },
+                },
+            },
+        ),
+        types.Tool(
             name="check_scan_result",
             description=(
                 "Poll for the result of a previously submitted URL or file scan. "
@@ -638,6 +668,18 @@ async def _dispatch(
             body["vendor_domains"] = arguments["vendor_domains"]
         return await client.post(
             f"{base}/secret-scan",
+            headers=headers,
+            json=body,
+        )
+
+    if name == "check_llm_credential_exposure":
+        body = {}
+        if "domain" in arguments:
+            body["domain"] = arguments["domain"]
+        if "vendor_domains" in arguments:
+            body["vendor_domains"] = arguments["vendor_domains"]
+        return await client.post(
+            f"{base}/llm-credential-exposure",
             headers=headers,
             json=body,
         )
