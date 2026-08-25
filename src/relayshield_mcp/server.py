@@ -80,7 +80,7 @@ app = Server("relayshield")
 
 @app.list_tools()
 async def list_tools() -> list[types.Tool]:
-    return [
+    tools = [
         types.Tool(
             name="check_breach",
             description=(
@@ -479,6 +479,37 @@ async def list_tools() -> list[types.Tool]:
         ),
     ]
 
+    # Per-call credential override (added for multi-tenant HTTP deployments,
+    # e.g. the Apify Actor in .actor/ -- one running server, many different
+    # calling agents, each paying for their own usage). RELAYSHIELD_API_KEY
+    # and RELAYSHIELD_X_PAYMENT are this process's environment-wide default,
+    # fine for a single local user, wrong for a shared server: every caller
+    # would either bill to one operator's key or share one x402 payment
+    # proof, and payment proofs are single-use per request in the first
+    # place. Injected onto every tool here rather than duplicated 15 times
+    # above, so a new tool gets the same override for free.
+    for tool in tools:
+        tool.inputSchema.setdefault("properties", {})
+        tool.inputSchema["properties"]["rs_api_key"] = {
+            "type": "string",
+            "description": (
+                "Optional. Your own RelayShield subscription API key for this call, "
+                "overriding the server's default credential. Use when multiple "
+                "callers share one running server (e.g. an Apify Actor) and each "
+                "must pay for its own usage rather than share one operator's key."
+            ),
+        }
+        tool.inputSchema["properties"]["x_payment"] = {
+            "type": "string",
+            "description": (
+                "Optional. x402 payment proof for this specific call, overriding "
+                "the server's default. Ignored if rs_api_key is also given for "
+                "this call (a key is cheaper per-check than paying per-call). "
+                "Same use case: per-caller billing on a shared server."
+            ),
+        }
+    return tools
+
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[types.TextContent] | types.CallToolResult:
@@ -488,15 +519,21 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent] | typ
             "See README for configuration instructions."
         )
 
+    # Per-call credential wins over this process's env-var default -- see the
+    # rs_api_key/x_payment injection in list_tools(). Popped out of arguments
+    # so they never leak into the RelayShield API request body itself.
+    call_api_key = arguments.pop("rs_api_key", None) or API_KEY
+    call_x_payment = arguments.pop("x_payment", None) or X_PAYMENT
+
     # Build request headers — subscription key takes priority over x402 payment proof
     headers = {"Content-Type": "application/json"}
-    if API_KEY:
-        headers["x-api-key"] = API_KEY
-    elif X_PAYMENT:
-        headers["X-PAYMENT"] = X_PAYMENT
+    if call_api_key:
+        headers["x-api-key"] = call_api_key
+    elif call_x_payment:
+        headers["X-PAYMENT"] = call_x_payment
     # If neither is set, the API Gateway will return 402 with payment requirements
 
-    payg = not API_KEY  # PAYG callers route to /v1/payg/ — API Gateway enforces key on /v1/
+    payg = not call_api_key  # PAYG callers route to /v1/payg/ — API Gateway enforces key on /v1/
     try:
         async with httpx.AsyncClient(timeout=28.0) as client:
             r = await _dispatch(client, name, arguments, headers, payg)
