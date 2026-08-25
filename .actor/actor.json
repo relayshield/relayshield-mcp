@@ -7,5 +7,6 @@
     "buildTag": "latest",
     "usesStandbyMode": true,
     "webServerMcpPath": "/mcp",
+    "webServerSchema": "./openapi.json",
     "dockerfile": "./Dockerfile"
 }
