@@ -20,7 +20,14 @@ RUN pip install --no-cache-dir "fastmcp>=3,<4" "apify>=4,<5" "uvicorn>=0.30"
 
 COPY .actor/src ./actor_src
 
-ENV RELAYSHIELD_API_URL=""
+# RELAYSHIELD_API_URL must not be declared as an empty string here: main.py
+# does os.environ.get("RELAYSHIELD_API_URL", "https://api.relayshield.net"),
+# and .get()'s fallback only fires when the key is absent, not when it's set
+# to "". An empty ENV line here silently wins over that fallback and every
+# tool call fails with "RELAYSHIELD_API_URL environment variable must be
+# set" -- confirmed live 2026-08-25. Set the real default directly instead;
+# override in Apify Console only if pointing at a different API deployment.
+ENV RELAYSHIELD_API_URL="https://api.relayshield.net"
 ENV RELAYSHIELD_API_KEY=""
 ENV RELAYSHIELD_X_PAYMENT=""
 
