@@ -8,5 +8,6 @@
     "usesStandbyMode": true,
     "webServerMcpPath": "/mcp",
     "webServerSchema": "./openapi.json",
+    "output": "./output_schema.json",
     "dockerfile": "./Dockerfile"
 }

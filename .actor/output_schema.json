@@ -1,0 +1,15 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "RelayShield Security Tools (MCP) output",
+    "description": "This Actor runs in Standby mode as a live MCP server. It does not write to a dataset -- its output is the running Streamable HTTP endpoint itself, which MCP clients connect to directly.",
+    "type": "object",
+    "properties": {
+        "mcpServerUrl": {
+            "type": "string",
+            "title": "MCP server endpoint",
+            "description": "Streamable HTTP MCP endpoint for this Actor run. Add it to an MCP client's server config, with an Apify API token as a bearer token.",
+            "resourceType": "webServer",
+            "template": "{{actorRun.containerUrl}}/mcp"
+        }
+    }
+}
