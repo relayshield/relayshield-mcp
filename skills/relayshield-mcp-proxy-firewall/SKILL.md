@@ -4,7 +4,7 @@ description: Screens a wallet agent's MCP write calls (send, swap, and batched c
 license: MIT
 metadata:
   author: RelayShield
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # RelayShield MCP Proxy Firewall for Wallet Agents
@@ -40,8 +40,8 @@ directly. Check the client's MCP server URL.
 - If it points at the RelayShield proxy, screening is on. The proxy
   address is `http://localhost:8090/` when the proxy runs on the same
   host, or the per-tenant hosted URL
-  `<tenant-id>.proxy.relayshield.net` (hosted proxy in build, not live
-  yet; use the self-hosted address until it ships).
+  `<tenant-id>.proxy.relayshield.net` (hosted proxy is live; each
+  paying tenant gets a dedicated instance at that URL).
 - If the agent runs the MetaMask `mm` CLI directly, there is no proxy
   screening. Use the pre-payment screens in the Tools section below.
 - If no wallet MCP tool is callable at all, the wallet MCP server is
@@ -139,8 +139,8 @@ forwards clean calls to the wallet's MCP server. Two values:
    by default, serves JSON-RPC 2.0 over HTTP at the root path, and
    forwards to the upstream). Hosted: the per-tenant URL from the
    RelayShield console, `<tenant-id>.proxy.relayshield.net` (hosted
-   proxy in build, not live yet; use the self-hosted address until it
-   ships). If the proxy runs on an appliance or another host, use that
+   proxy is live; each paying tenant gets a dedicated instance at that
+   URL). If the proxy runs on an appliance or another host, use that
    host's address and port instead.
 
 Example client configuration (Claude Code style, adjust for your harness):
@@ -157,7 +157,9 @@ Example client configuration (Claude Code style, adjust for your harness):
 ```
 
 For the hosted proxy, replace the URL with
-`https://<tenant-id>.proxy.relayshield.net/` once the hosted proxy ships.
+`https://<tenant-id>.proxy.relayshield.net/`, the per-tenant URL from
+the RelayShield console. The tenant id in the URL uses hyphens
+(`tnt-example-tenant`), not underscores.
 
 The proxy also needs a RelayShield API key for deeper screening
 (`RELAYSHIELD_API_KEY`). The proxy's own health endpoint is
@@ -176,14 +178,32 @@ citations to the human. If the same address were clean, the call would pass
 through, the wallet would return its approval prompt, and the human would
 still approve it in the wallet before anything moves.
 
+## Agent Verifiers Bundle
+
+Screening a call is half the story. The Agent Verifiers Bundle checks
+the other half: that the agent you are paying through is the agent you
+think it is, the intent is bound before the call, and the settlement is
+checked after it. It includes TAP Verifier, PAP, Passport identity,
+intent binding, and settle check, plus threat corpus screening. The
+bundle is $79 per month standalone, with 100 free verifications per
+month. Verifier calls count toward the Firewall's 20,000 screened
+calls per month when bundled. Pair the bundle with the Firewall and
+the combined license is $109 per month, which saves $19 against
+buying them separately ($49 + $79). The bundle is in the Pricing
+section below.
+
 ## Pricing and how to get it
 
 The Firewall is a subscription product. There is no pay-as-you-go Firewall.
 A wallet-agent user gets it through the direct subscription: $49 per month
 for a single-tenant SMB, 20,000 screened calls included, $0.002 per call
 above that. MSPs and distributors use the $69 per-org per-month plan, one
-subscription per client org. An appliance license is available for
-self-hosted deployments on Vultr, DigitalOcean, and OpenNebula. The x402
+subscription per client org. The Agent Verifiers Bundle is $79 per
+month standalone, with 100 free verifications per month. The combined
+Firewall plus Agent Verifiers Bundle is $109 per month for a direct
+developer, which saves $19 against buying them separately. An
+appliance license is available for self-hosted deployments on Vultr,
+DigitalOcean, and OpenNebula. The x402
 pre-payment screens are pay-as-you-go instead: counterparty-screen $0.10
 per call, pin-check $0.02 per call. Get started at
 https://api.relayshield.net/developers, or email
