@@ -1,0 +1,21 @@
+name: relayshield-mcp-proxy-firewall
+version: 1.1.0
+description: Screens a wallet agent's MCP write calls (send, swap, and batched contract calls) against RelayShield's live threat-intelligence corpus and the tenant's intent binding before they reach the wallet.
+author: RelayShield
+license: MIT
+repository: https://github.com/relayshield/relayshield-mcp
+homepage: https://api.relayshield.net/developers
+skills:
+  - skills/relayshield-mcp-proxy-firewall/SKILL.md
+mcp_servers:
+  - name: relayshield-free-mcp
+    url: https://relayshieldadmin-relayshield-free-mcp.hf.space/mcp
+    description: RelayShield free MCP server for scam checks (threat-intel screening, no auth).
+keywords:
+  - mcp
+  - wallet-agent
+  - firewall
+  - threat-intelligence
+  - coinbase
+  - metamask
+  - x402
