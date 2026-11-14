@@ -22,6 +22,17 @@ Configuration (environment variables, all optional):
   RS_SOURCE_TAG       — channel label recorded by the API so per-channel usage
                         can be measured (default "mcp-free"). Distributors
                         (Claude, ChatGPT, registries) should set their own tag.
+"""
+
+import asyncio
+import base64
+import json
+import os
+
+import httpx
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
+from mcp import types
 
 Built on MCP Python SDK 2.3.0 (mcp.server.mcpserver.MCPServer). The server
 also serves the RelayShield MCP Proxy Firewall skill via the SEP-2640
@@ -53,6 +64,14 @@ API_KEY = os.environ.get("RELAYSHIELD_API_KEY", "")
 SOURCE_TAG = os.environ.get("RS_SOURCE_TAG", "mcp-free")  # recorded by the API so the channel can be measured
 
 # ---------------------------------------------------------------------------
+# Server
+# ---------------------------------------------------------------------------
+
+app = Server("relayshield-free")
+
+
+def _error(text: str) -> list[types.TextContent]:
+    return [types.TextContent(type="text", text=text)]
 # Summaries (unchanged from the 1.x server: one human-readable summary per
 # tool, raw upstream payloads are never returned)
 # ---------------------------------------------------------------------------
@@ -102,6 +121,7 @@ def _summarise_email(data: dict) -> str:
         "Risk: {} | Score: {}".format(data.get("risk"), data.get("score")),
     ]
     for flag in data.get("flags") or []:
+        lines.append(f"- {flag}")
         if isinstance(flag, dict):
             lines.append(f"- {flag.get('text', flag)}")
         else:
@@ -167,6 +187,30 @@ TOOLS: dict[str, dict] = {
     "check_link": {
         "path": "/v1/link-check",
         "summary": _summarise_link,
+        "description": (
+            "Check one link — or up to 25 at once — for known phishing, malware and scam abuse. "
+            "Free and keyless: no API key, no signup, no payment. Signals: RelayShield's criminal "
+            "IOC corpus, threat feeds, and domain registration age. "
+            "It never answers 'safe'; the best verdict is 'unknown' (nothing known against the domain). "
+            "Use before clicking, forwarding, or quoting a link, and to screen links inside a suspicious message."
+        ),
+        "schema": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "A single link starting with http:// or https://. Omit when sending urls.",
+                },
+                "urls": {
+                    "type": "array",
+                    "maxItems": 25,
+                    "items": {"type": "string"},
+                    "description": "Up to 25 links to check in one call. Omit when sending url.",
+                },
+            },
+        },
+        "body": lambda a: {k: v for k, v in {"url": a.get("url"), "urls": a.get("urls")}.items() if v}
+        | {"source": SOURCE_TAG},
         "title": "Check links for phishing and malware",
         "open_world": False,
         "description": (
@@ -182,6 +226,25 @@ TOOLS: dict[str, dict] = {
     "check_wallet": {
         "path": "/v1/wallet-risk",
         "summary": _summarise_wallet,
+        "description": (
+            "Screen a crypto wallet address BEFORE sending funds to it. Free and keyless: no API key, "
+            "no signup, no payment. The chain (EVM, Solana, TON, Bitcoin) is detected from the address "
+            "format automatically. Returns a risk level (CRITICAL/HIGH/MEDIUM/LOW/unknown) with the "
+            "specific sanctions, scam, drainer and phishing flags behind it. "
+            "'unknown' means nothing is known against the address, not that it is safe. "
+            "Use whenever a user is about to pay an address they were given."
+        ),
+        "schema": {
+            "type": "object",
+            "required": ["address"],
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "Wallet address to screen. Chain is auto-detected.",
+                },
+            },
+        },
+        "body": lambda a: {"address": a["address"], "source": SOURCE_TAG},
         "title": "Check a crypto wallet for risk",
         "open_world": True,
         "description": (
@@ -197,6 +260,61 @@ TOOLS: dict[str, dict] = {
     "check_email": {
         "path": "/v1/email-check",
         "summary": _summarise_email,
+        "description": (
+            "Score a suspicious email for phishing signals. Free and keyless: no API key, "
+            "no signup, no payment. Pass the fields you already parsed (subject, body text, "
+            "claimed sender, reply-to, links) — the endpoint returns a risk level, score, "
+            "and the specific flags behind it, and checks any links against RelayShield's "
+            "IOC corpus, threat feeds, and domain registration age. "
+            "It never answers 'safe'; the best verdict is 'unknown'. "
+            "Use on a suspicious message before acting on it."
+        ),
+        "schema": {
+            "type": "object",
+            "properties": {
+                "from_address": {
+                    "type": "string",
+                    "description": "The claimed sender's address, e.g. alerts@phrase.com.",
+                },
+                "from_name": {
+                    "type": "string",
+                    "description": "The claimed sender's display name.",
+                },
+                "reply_to": {
+                    "type": "string",
+                    "description": "Reply-To address, if present and different from from_address.",
+                },
+                "return_path": {
+                    "type": "string",
+                    "description": "Envelope sender, if available. Informational only.",
+                },
+                "subject": {"type": "string", "description": "Message subject."},
+                "body_text": {
+                    "type": "string",
+                    "description": "Plain-text body, used for urgency/deadline/threat phrasing.",
+                },
+                "links": {
+                    "type": "array",
+                    "maxItems": 25,
+                    "items": {"type": "string"},
+                    "description": "Links found in the body, up to 25.",
+                },
+            },
+        },
+        "body": lambda a: {
+            k: v
+            for k, v in {
+                "from_address": a.get("from_address"),
+                "from_name": a.get("from_name"),
+                "reply_to": a.get("reply_to"),
+                "return_path": a.get("return_path"),
+                "subject": a.get("subject"),
+                "body_text": a.get("body_text"),
+                "links": a.get("links"),
+            }.items()
+            if v
+        }
+        | {"source": SOURCE_TAG},
         "title": "Score an email for phishing signals",
         "open_world": False,
         "description": (
@@ -212,6 +330,54 @@ TOOLS: dict[str, dict] = {
         "path": "/v1/metered/breach",
         "requires_key": True,
         "summary": _summarise_breach,
+        "description": (
+            "Check whether an email address appears in known data breaches — 13B+ records. "
+            "Needs a RelayShield partner API key (set RELAYSHIELD_API_KEY); without one the "
+            "tool explains how to get set up instead of failing. Returns the breach count "
+            "with the named sources behind it. Use when vetting an identity, a new account, "
+            "or credentials that may have been exposed."
+        ),
+        "schema": {
+            "type": "object",
+            "required": ["email"],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email address to check. Case-insensitive.",
+                },
+            },
+        },
+        "body": lambda a: {"email": a["email"], "source": SOURCE_TAG},
+    },
+}
+
+
+@app.list_tools()
+async def list_tools() -> list[types.Tool]:
+    return [
+        types.Tool(name=name, description=spec["description"], inputSchema=spec["schema"])
+        for name, spec in TOOLS.items()
+    ]
+
+
+@app.call_tool()
+async def call_tool(name: str, arguments: dict) -> list[types.TextContent] | types.CallToolResult:
+    spec = TOOLS.get(name)
+    if spec is None:
+        return _error(f"Unknown tool: {name}")
+
+    if spec.get("requires_key") and not API_KEY:
+        return _error(
+            "check_breach needs a RelayShield partner API key. Set the RELAYSHIELD_API_KEY "
+            "environment variable (get a key at https://api.relayshield.net/developers). "
+            "The link, wallet, and email checks work keyless without one."
+        )
+
+    body = spec["body"](arguments or {})
+    if name == "check_link" and not body.get("url") and not body.get("urls"):
+        return _error("Send either `url` (one link) or `urls` (up to 25), not neither.")
+
         "title": "Check an email against known data breaches",
         "open_world": False,
         "description": (
@@ -293,6 +459,20 @@ async def _call_api(name: str, body: dict) -> str:
         headers["X-RS-API-KEY"] = API_KEY
 
     try:
+        async with httpx.AsyncClient(timeout=28.0) as client:
+            r = await client.post(API_BASE + spec["path"], json=body, headers=headers)
+    except httpx.TimeoutException:
+        return _error("Request timed out — upstream API did not respond within 28 seconds.")
+    except httpx.RequestError as exc:
+        return _error(f"Network error: {exc}")
+
+    if not (200 <= r.status_code < 300):
+        return types.CallToolResult(
+            content=[types.TextContent(
+                type="text",
+                text=json.dumps({"ok": False, "status_code": r.status_code, "body": r.text[:2000]}),
+            )],
+            isError=True,
         # trust_env=False + explicit proxy: httpx 0.28.1 crashes building
         # its mounts when NO_PROXY carries bracketed IPv6 entries such as
         # "[::1]". The proxy, when the host sets one, comes from
@@ -315,6 +495,19 @@ async def _call_api(name: str, body: dict) -> str:
     try:
         payload = r.json()
     except ValueError:
+        return _error(f"Upstream returned non-JSON: {r.text[:500]}")
+
+    if not payload.get("ok"):
+        return _error(f"Upstream error: {payload.get('error', 'unknown')}")
+
+    text = spec["summary"](payload.get("data", {}))
+    text += "\n\nRaw response:\n" + json.dumps(payload, indent=2)[:4000]
+    return [types.TextContent(type="text", text=text)]
+
+
+async def _main() -> None:
+    async with stdio_server() as (read_stream, write_stream):
+        await app.run(read_stream, write_stream, app.create_initialization_options())
         return f"Upstream returned non-JSON: {r.text[:500]}"
 
     if not payload.get("ok"):
