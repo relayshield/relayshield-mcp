@@ -5,12 +5,6 @@ author: RelayShield
 license: MIT
 repository: https://github.com/relayshield/relayshield-mcp
 homepage: https://api.relayshield.net/developers
-skills:
-  - skills/relayshield-mcp-proxy-firewall/SKILL.md
-mcp_servers:
-  - name: relayshield-free-mcp
-    url: https://relayshieldadmin-relayshield-free-mcp.hf.space/mcp
-    description: RelayShield free MCP server for scam checks (threat-intel screening, no auth).
 keywords:
   - mcp
   - wallet-agent
