@@ -1,4 +1,5 @@
 # relayshield-mcp
+[![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/relayshield/relayshield-mcp)
 
 <!-- mcp-name: io.github.nzdsf2-gif/relayshield-mcp -->
 
